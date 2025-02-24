@@ -1,4 +1,5 @@
 const prompt = require('prompt-sync')({sigint: true});
+const { shuffleArray, nestArrays } = require('./utils.js');
 
 const hat = '^';
 const hole = 'O';
@@ -6,12 +7,32 @@ const fieldCharacter = '░';
 const pathCharacter = '*';
 
 class Field {
-  constructor(field, width=3, height=3) {
-    this.field = field;
+  constructor(width=3, height=3, holesPercentage=0.25) {
+    this.holesPercentage = holesPercentage;
     this.width = width;
     this.height = height;
     this.gameOver = false;
     this.position = [0,0];
+    this.field = Field.generateField(width, height, holesPercentage);
+  }
+
+  static generateField(width=this.width, height=this.height, holesPercentage=this.holesPercentage) {
+    const fieldStringLength = (width * height) - 2;
+    const holesNumber = Math.floor(fieldStringLength * holesPercentage);
+    const fieldCharactersNumber = fieldStringLength - holesNumber;
+
+    let fieldArray = [hat]
+      .concat(Array(holesNumber).fill(hole))
+      .concat(Array(fieldCharactersNumber).fill(fieldCharacter));
+
+    shuffleArray(fieldArray)
+    fieldArray.unshift(pathCharacter);
+    fieldArray = nestArrays(fieldArray, width);
+    return fieldArray
+  }
+
+  setRandomField(width, height, holesPercentage) {
+    this.field = this.generateField(width, height, holesPercentage);
   }
   
   print() {
@@ -35,6 +56,10 @@ class Field {
       case "down":
         if (this.position[1] !== this.height - 1) this.position[1] += 1;
         break;
+      case "u":
+      case "up":
+        if (this.position[1] !== 0) this.position[1] -= 1;
+        break;
       default:
         console.log("Invalid input");
         break;
@@ -50,7 +75,7 @@ class Field {
         this.field[verticalPosition][horizontalPosition] = pathCharacter;
         break;
       case hat:
-        console.log("Congradulations! You found the hat! :)")
+        console.log("Congratulations! You found your hat! :)")
         this.gameOver = true;
         break;
       case hole:
@@ -66,16 +91,12 @@ class Field {
 }
 
 
-const myField = new Field([
-  ['*', '░', 'O'],
-  ['░', 'O', '░'],
-  ['░', '^', '░'],
-]);
+const myField = new Field(5, 5, 0.3);
 
-// console.log(myField.field[myField.position[1]][myField.position[0]]);
+
 while (!myField.gameOver) {
   myField.print();
-  const input = prompt("Enter a direction: l (left), r (right), d (down): ")
+  const input = prompt("Enter a direction: l (left), r (right), d (down), or u (up): ")
     .toLowerCase();
   myField.moveInput(input);
   myField.movedFoundFell()
