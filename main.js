@@ -1,14 +1,7 @@
 const prompt = require('prompt-sync')({sigint: true});
-const { shuffleArray, nestArrays } = require('./utils.js');
 const { Field } = require('./fieldClass');
 
-const hat = '^';
-const hole = 'O';
-const fieldCharacter = '░';
-const pathCharacter = '*';
-
-const myField = new Field(5, 5, 0.3);
-
+const myField = new Field(8, 5, 0.2);
 
 while (!myField.gameOver) {
   myField.print();
@@ -18,4 +11,3 @@ while (!myField.gameOver) {
   myField.movedFoundFell()
   if (myField.gameOver) break;
 }
-

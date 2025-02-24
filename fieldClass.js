@@ -11,8 +11,7 @@ class Field {
     this.width = width;
     this.height = height;
     this.gameOver = false;
-    this.position = [0,0];
-    this.field = Field.generateField(width, height, holesPercentage);
+    [this.field, this.position] = Field.generateField(width, height, holesPercentage);
   }
 
   static generateField(width=this.width, height=this.height, holesPercentage=this.holesPercentage) {
@@ -20,18 +19,21 @@ class Field {
     const holesNumber = Math.floor(fieldStringLength * holesPercentage);
     const fieldCharactersNumber = fieldStringLength - holesNumber;
 
-    let fieldArray = [hat]
+    let fieldArray = [hat, pathCharacter]
       .concat(Array(holesNumber).fill(hole))
       .concat(Array(fieldCharactersNumber).fill(fieldCharacter));
 
     shuffleArray(fieldArray)
-    fieldArray.unshift(pathCharacter);
     fieldArray = nestArrays(fieldArray, width);
-    return fieldArray
-  }
-
-  setRandomField(width, height, holesPercentage) {
-    this.field = this.generateField(width, height, holesPercentage);
+    let position = [0,0];
+    for (let i=0; i < fieldArray.length; i++) {
+      const found = fieldArray[i].findIndex((char) => char === pathCharacter);
+      if (found !== -1) {
+        position = [found, i];
+        break;
+      };
+    }
+    return [fieldArray, position];
   }
   
   print() {
