@@ -1,6 +1,7 @@
-const prompt = require('prompt-sync')({sigint: true});
-const { Field } = require('./fieldClass');
+import promptSync from 'prompt-sync';
+import { Field } from './fieldClass';
 
+const prompt = promptSync({ sigint: true });
 const myField = new Field(8, 5, 0.2);
 
 while (!myField.gameOver) {

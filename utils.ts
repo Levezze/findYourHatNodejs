@@ -1,12 +1,12 @@
-function shuffleArray(array) {
+export function shuffleArray(array:string[]):void {
   for (let i = array.length - 1; i >= 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [array[i], array[j]] = [array[j], array[i]];
   }
 }
 
-function nestArrays(array, width) {
-  let nestedArray = [];
+export function nestArrays(array:string[], width:number) {
+  let nestedArray:string[][] = [];
   for (let i=width; i <= array.length; i+=width) {
     if (i > 0) {
       let currentIndex = i - width;
@@ -16,5 +16,3 @@ function nestArrays(array, width) {
   };
   return nestedArray;
 };
-
-module.exports = { shuffleArray, nestArrays };
