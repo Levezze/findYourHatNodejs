@@ -1,4 +1,7 @@
 "use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.shuffleArray = shuffleArray;
+exports.nestArrays = nestArrays;
 function shuffleArray(array) {
     for (let i = array.length - 1; i >= 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -18,4 +21,3 @@ function nestArrays(array, width) {
     return nestedArray;
 }
 ;
-module.exports = { shuffleArray, nestArrays };

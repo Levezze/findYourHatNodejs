@@ -150,8 +150,8 @@ export class Field {
           return false;
         default:
           return false;
-      }
-    }
+      };
+    };
 
     const moveDirectionRight = {forward: 'r', right: 'd', left: 'u', back: 'l'};
     const moveDirectionDown = {forward: 'd', right: 'l', left: 'r', back: 'u'};
@@ -181,7 +181,6 @@ export class Field {
     };
 
     type MoveKey = 'forward' | 'right' | 'left';
-
     const movePriority = ['forward', 'right', 'left'] as const;
     const backtrackMovePriority = ['left', 'right', 'forward'] as const;
     
@@ -192,23 +191,30 @@ export class Field {
     let isFailed = false;
     let isFound = false;
     const originalPosition = [...this.position];
+    let steps = 0;
+    let currentPosition = originalPosition;
     while (!isFailed && !isFound) {
-      let steps = 0;
-      let currentPosition = originalPosition;
       let move:string;
       moveArr = !isBacktracking ? movePriority: backtrackMovePriority;
 
       // Test if pointer can move to another tile
+      let isStuck = 0;
       for (let i=0; i < moveArr.length; i++) {
         move = currentMoveDirection[moveArr[i]];
-        moveInputTest(currentPosition, move);
-        if (moveResult(currentPosition, testFieldArr)) {
+        let testPosition = [...currentPosition];
+        moveInputTest(testPosition, move);
+        isStuck++;
+        if (moveResult(testPosition, testFieldArr)) {
+          currentPosition = testPosition;
           changeMoveDirection(move);
+          this.print();
+          console.log(move);
+          console.log(currentPosition);
           if (!isBacktracking) {
             steps++;
           } else {
             steps--;
-            if (steps === 0) {
+            if (steps < -1) {
               isFailed = true;
               break;
             }
@@ -217,6 +223,11 @@ export class Field {
         } else {
           isBacktracking = true;
         }
+        if (isStuck > 3) {
+          isFailed = true;
+          console.log('Got stuck!')
+          break;
+        };
       };
 
       if (isFailed) {
@@ -229,7 +240,13 @@ export class Field {
         break;
       };
     }
-    if (isFailed) return false;
-    if (isFound) return true;
+
+    if (isFailed) {
+      return false;
+    }
+    
+    if (isFound) {
+      return true;
+    }
   }
 };
