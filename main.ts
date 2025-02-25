@@ -3,6 +3,7 @@ import { Field } from './fieldClass';
 
 const prompt = promptSync({ sigint: true });
 const myField = new Field(8, 5, 0.2);
+myField.testField();
 
 while (!myField.gameOver) {
   myField.print();
