@@ -6,8 +6,8 @@
   "author": "Codecademy",
   "license": "ISC",
   "dependencies": {
+    "colors": "^1.4.0",
     "prompt-sync": "^4.1.7",
-    "terminal-kit": "^3.1.2",
     "tsc": "^2.0.4"
   },
   "scripts": {

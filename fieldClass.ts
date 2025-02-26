@@ -47,7 +47,7 @@ export class Field {
   }
   
   print() {
-    console.clear();
+    // console.clear();
     for (let i=0; i < this.field.length; i++) {
       console.log(this.field[i].join(""));
     }
@@ -104,12 +104,12 @@ export class Field {
 
   testField() {
     const testFieldArr = [...this.field];
-    const backtrackCharacter = 'x';
+    const backtrackCharacter = 'X';
 
-    const moveInputTest = (position:number[], input:string) => {
+    const moveInputTest = (position:number[], input:string): void => {
       switch (input) {
         case "l":
-          if (position[0] !== 0) return [position[0] -= 1, position[1]];
+          if (position[0] !== 0) position[0] -= 1;
           break;
         case "r":
           if (position[0] !== this.width - 1) position[0] += 1;
@@ -125,24 +125,21 @@ export class Field {
       };
     };
 
-    function moveResult(position: number[], field: string[][]) {
+    function moveResult(position: number[], field: string[][]): boolean | number {
       const horizontalPosition = position[0];
       const verticalPosition = position[1];
       const currentPosition = field[verticalPosition][horizontalPosition];
       switch (currentPosition) {
         case fieldCharacter:
-          field[verticalPosition][horizontalPosition] = pathCharacter;
-          if (isBacktracking) isBacktracking = false;
-          return true;
+          return 2;
         case hat:
           isFound = true;
-          return true;
+          return 1;
         case hole:
           return false;
         case pathCharacter:
           if (isBacktracking) {
-            field[verticalPosition][horizontalPosition] = backtrackCharacter;
-            return true;
+            return 3;
           } else {
             return false;
           }
@@ -152,6 +149,20 @@ export class Field {
           return false;
       };
     };
+
+    function moveToTile(position: number[], field: string[][]): void {
+      const horizontalPosition = position[0];
+      const verticalPosition = position[1];
+      const currentPosition = field[verticalPosition][horizontalPosition];
+      switch (currentPosition) {
+        case fieldCharacter:
+          field[verticalPosition][horizontalPosition] = pathCharacter;
+          break;
+        case pathCharacter:
+          field[verticalPosition][horizontalPosition] = backtrackCharacter;
+          break;
+      }
+    }
 
     const moveDirectionRight = {forward: 'r', right: 'd', left: 'u', back: 'l'};
     const moveDirectionDown = {forward: 'd', right: 'l', left: 'r', back: 'u'};
@@ -180,59 +191,101 @@ export class Field {
       };
     };
 
+    const reverseMoveDirection = (direction:string) => {
+      switch (direction) {
+        case (currentMoveDirection.forward):
+          break;
+        case 'r':
+          currentMoveDirection = moveDirectionLeft;
+          break;
+        case 'd':
+          currentMoveDirection = moveDirectionUp;
+          break;
+        case 'l':
+          currentMoveDirection = moveDirectionRight;
+          break;
+        case 'u':
+          currentMoveDirection = moveDirectionDown;
+          break;
+        default:
+          break;
+      };
+    };
+
     type MoveKey = 'forward' | 'right' | 'left';
-    const movePriority = ['forward', 'right', 'left'] as const;
-    const backtrackMovePriority = ['left', 'right', 'forward'] as const;
+    const moveDirectionPriority = ['forward', 'right', 'left'] as const;
+    const backtrackMoveDirectionPriority = ['right', 'left', 'forward'] as const;
     
-    let moveArr:readonly MoveKey[];
+    let moveDirectionKeys:readonly MoveKey[];
     
     let isBacktracking = false; // When there's nowhere to continue
 
     let isFailed = false;
     let isFound = false;
     const originalPosition = [...this.position];
-    let steps = 0;
     let currentPosition = originalPosition;
+    let isStuck = 0;
     while (!isFailed && !isFound) {
-      let move:string;
-      moveArr = !isBacktracking ? movePriority: backtrackMovePriority;
+      let moveDirection:string;
+      moveDirectionKeys = !isBacktracking ? moveDirectionPriority: backtrackMoveDirectionPriority;
+      
+      // Test Arrays
+      const positionsArray: number[][] = [];
+      const moveResultsArray: (boolean | number)[] = [];
+      const moveDirectionsArray: string[] = [];
 
       // Test if pointer can move to another tile
-      let isStuck = 0;
-      for (let i=0; i < moveArr.length; i++) {
-        move = currentMoveDirection[moveArr[i]];
+      for (let i=0; i < moveDirectionKeys.length; i++) {
+        moveDirection = currentMoveDirection[moveDirectionKeys[i]];
         let testPosition = [...currentPosition];
-        moveInputTest(testPosition, move);
-        isStuck++;
-        if (moveResult(testPosition, testFieldArr)) {
-          currentPosition = testPosition;
-          changeMoveDirection(move);
-          this.print();
-          console.log(move);
-          console.log(currentPosition);
-          if (!isBacktracking) {
-            steps++;
-          } else {
-            steps--;
-            if (steps < -1) {
-              isFailed = true;
-              break;
+        moveInputTest(testPosition, moveDirection);
+        positionsArray.push(testPosition);
+        moveResultsArray.push(moveResult(testPosition, testFieldArr));
+        moveDirectionsArray.push(moveDirection);
+      }
+      
+      console.log(positionsArray);
+      console.log(moveResultsArray);
+      console.log(moveDirectionsArray);
+
+      if (moveResultsArray.some(Boolean)) {
+        let priorityMove: number | null = null;
+        for (let i=0; i < moveResultsArray.length; i++) {
+          if (typeof moveResultsArray[i] === 'number') {
+            if (priorityMove === null) {
+              priorityMove = i;
+            } else if (moveResultsArray[i] as number < (moveResultsArray[priorityMove] as number)) {
+              console.log('comparison 1: ', moveResultsArray[i] as number);
+              console.log('comparison 2: ', moveResultsArray[priorityMove] as number);
+              console.log('result: ', moveResultsArray[i] as number < (moveResultsArray[priorityMove] as number))
+              priorityMove = i;
             }
+            console.log(positionsArray[priorityMove as number]);
+            console.log(moveDirectionsArray[priorityMove as number]);
           }
-          break;
-        } else {
-          isBacktracking = true;
         }
-        if (isStuck > 3) {
-          isFailed = true;
-          console.log('Got stuck!')
-          break;
-        };
-      };
+        const newPosition = positionsArray[priorityMove as number];
+        const newDirection = moveDirectionsArray[priorityMove as number];
+        moveToTile(newPosition, testFieldArr);
+        currentPosition = newPosition;
+        changeMoveDirection(newDirection);
+      } else {
+        moveToTile(currentPosition, testFieldArr) // To make this tile "X"
+        reverseMoveDirection(currentMoveDirection.forward);
+        isBacktracking = true;
+      }
+
+      this.print();
+      
+      isStuck++;
+      if (isStuck > this.width * this.height * 2) {
+        console.log('stuck');
+        isFailed = true;
+      }
 
       if (isFailed) {
         console.log('Failed to reach hat.');
-        continue;
+        break;
       };
 
       if (isFound) {
