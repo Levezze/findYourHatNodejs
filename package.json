@@ -2,11 +2,12 @@
   "name": "find-your-hat",
   "version": "1.0.0",
   "description": "A terminal maze-solving game.",
+  "type": "module",
   "main": "dist/main.js",
   "author": "Codecademy",
   "license": "ISC",
   "dependencies": {
-    "colors": "^1.4.0",
+    "chalk": "^5.4.1",
     "prompt-sync": "^4.1.7",
     "tsc": "^2.0.4"
   },

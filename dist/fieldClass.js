@@ -1,12 +1,16 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.Field = void 0;
-const utils_js_1 = require("./utils.js");
+import { shuffleArray, nestArrays } from './utils.js';
+import chalk from 'chalk';
 const hat = '^';
 const hole = 'O';
 const fieldCharacter = '░';
 const pathCharacter = '*';
-class Field {
+export class Field {
+    holesPercentage;
+    width;
+    height;
+    gameOver;
+    field;
+    position;
     constructor(width = 3, height = 3, holesPercentage = 0.25) {
         this.holesPercentage = holesPercentage;
         this.width = width;
@@ -21,8 +25,8 @@ class Field {
         let fieldArray = [hat, pathCharacter]
             .concat(Array(holesNumber).fill(hole))
             .concat(Array(fieldCharactersNumber).fill(fieldCharacter));
-        (0, utils_js_1.shuffleArray)(fieldArray);
-        const nestedFieldArray = (0, utils_js_1.nestArrays)(fieldArray, width);
+        shuffleArray(fieldArray);
+        const nestedFieldArray = nestArrays(fieldArray, width);
         let position = [0, 0];
         for (let i = 0; i < nestedFieldArray.length; i++) {
             const found = nestedFieldArray[i].findIndex((char) => char === pathCharacter);
@@ -35,9 +39,34 @@ class Field {
         return [nestedFieldArray, position];
     }
     print() {
-        // console.clear();
+        console.clear();
         for (let i = 0; i < this.field.length; i++) {
-            console.log(this.field[i].join(""));
+            let rowString = "";
+            for (let j = 0; j < this.field[i].length; j++) {
+                if (this.position[0] === j && this.position[1] === i) {
+                    rowString += chalk.red(pathCharacter);
+                }
+                else {
+                    switch (this.field[i][j]) {
+                        case fieldCharacter:
+                            rowString += chalk.gray(fieldCharacter);
+                            break;
+                        case hat:
+                            rowString += chalk.yellow(hat);
+                            break;
+                        case hole:
+                            rowString += chalk.magenta(hole);
+                            break;
+                        case pathCharacter:
+                            rowString += chalk.white(pathCharacter);
+                            break;
+                        default:
+                            rowString += this.field[i][j];
+                            break;
+                    }
+                }
+            }
+            console.log(rowString);
         }
     }
     moveInput(input) {
@@ -92,7 +121,7 @@ class Field {
         }
     }
     testField() {
-        const testFieldArr = [...this.field];
+        const testFieldArr = this.field.map(row => [...row]);
         const backtrackCharacter = 'X';
         const moveInputTest = (position, input) => {
             switch (input) {
@@ -117,12 +146,13 @@ class Field {
             }
             ;
         };
-        function moveResult(position, field) {
+        function moveResult(position, field, backtracking) {
             const horizontalPosition = position[0];
             const verticalPosition = position[1];
             const currentPosition = field[verticalPosition][horizontalPosition];
             switch (currentPosition) {
                 case fieldCharacter:
+                    backtracking = false;
                     return 2;
                 case hat:
                     isFound = true;
@@ -130,14 +160,19 @@ class Field {
                 case hole:
                     return false;
                 case pathCharacter:
-                    if (isBacktracking) {
+                    if (backtracking) {
                         return 3;
                     }
                     else {
                         return false;
                     }
                 case backtrackCharacter:
-                    return false;
+                    if (backtracking) {
+                        return 4;
+                    }
+                    else {
+                        return false;
+                    }
                 default:
                     return false;
             }
@@ -162,21 +197,21 @@ class Field {
         const moveDirectionLeft = { forward: 'l', right: 'u', left: 'd', back: 'r' };
         const moveDirectionUp = { forward: 'u', right: 'r', left: 'l', back: 'd' };
         let currentMoveDirection = moveDirectionRight;
-        const changeMoveDirection = (direction) => {
+        const changeMoveDirection = (currentDirection, direction) => {
             switch (direction) {
-                case (currentMoveDirection.forward):
+                case (currentDirection.forward):
                     break;
                 case 'r':
-                    currentMoveDirection = moveDirectionRight;
+                    currentDirection = moveDirectionRight;
                     break;
                 case 'd':
-                    currentMoveDirection = moveDirectionDown;
+                    currentDirection = moveDirectionDown;
                     break;
                 case 'l':
-                    currentMoveDirection = moveDirectionLeft;
+                    currentDirection = moveDirectionLeft;
                     break;
                 case 'u':
-                    currentMoveDirection = moveDirectionUp;
+                    currentDirection = moveDirectionUp;
                     break;
                 default:
                     break;
@@ -185,8 +220,6 @@ class Field {
         };
         const reverseMoveDirection = (direction) => {
             switch (direction) {
-                case (currentMoveDirection.forward):
-                    break;
                 case 'r':
                     currentMoveDirection = moveDirectionLeft;
                     break;
@@ -205,7 +238,7 @@ class Field {
             ;
         };
         const moveDirectionPriority = ['forward', 'right', 'left'];
-        const backtrackMoveDirectionPriority = ['right', 'left', 'forward'];
+        const backtrackMoveDirectionPriority = ['left', 'right', 'forward'];
         let moveDirectionKeys;
         let isBacktracking = false; // When there's nowhere to continue
         let isFailed = false;
@@ -226,12 +259,9 @@ class Field {
                 let testPosition = [...currentPosition];
                 moveInputTest(testPosition, moveDirection);
                 positionsArray.push(testPosition);
-                moveResultsArray.push(moveResult(testPosition, testFieldArr));
+                moveResultsArray.push(moveResult(testPosition, testFieldArr, isBacktracking));
                 moveDirectionsArray.push(moveDirection);
             }
-            console.log(positionsArray);
-            console.log(moveResultsArray);
-            console.log(moveDirectionsArray);
             if (moveResultsArray.some(Boolean)) {
                 let priorityMove = null;
                 for (let i = 0; i < moveResultsArray.length; i++) {
@@ -240,32 +270,30 @@ class Field {
                             priorityMove = i;
                         }
                         else if (moveResultsArray[i] < moveResultsArray[priorityMove]) {
-                            console.log('comparison 1: ', moveResultsArray[i]);
-                            console.log('comparison 2: ', moveResultsArray[priorityMove]);
-                            console.log('result: ', moveResultsArray[i] < moveResultsArray[priorityMove]);
                             priorityMove = i;
                         }
-                        console.log(positionsArray[priorityMove]);
-                        console.log(moveDirectionsArray[priorityMove]);
                     }
                 }
+                ;
                 const newPosition = positionsArray[priorityMove];
                 const newDirection = moveDirectionsArray[priorityMove];
                 moveToTile(newPosition, testFieldArr);
                 currentPosition = newPosition;
-                changeMoveDirection(newDirection);
+                changeMoveDirection(currentMoveDirection, newDirection);
             }
             else {
                 moveToTile(currentPosition, testFieldArr); // To make this tile "X"
                 reverseMoveDirection(currentMoveDirection.forward);
                 isBacktracking = true;
             }
-            this.print();
+            ;
+            // this.print();
             isStuck++;
             if (isStuck > this.width * this.height * 2) {
                 console.log('stuck');
                 isFailed = true;
             }
+            ;
             if (isFailed) {
                 console.log('Failed to reach hat.');
                 break;
@@ -277,13 +305,16 @@ class Field {
             }
             ;
         }
+        ;
         if (isFailed) {
             return false;
         }
+        ;
         if (isFound) {
             return true;
         }
+        ;
     }
+    ;
 }
-exports.Field = Field;
 ;

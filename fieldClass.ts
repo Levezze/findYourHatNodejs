@@ -1,4 +1,5 @@
 import { shuffleArray, nestArrays } from './utils.js';
+import chalk from 'chalk';
 
 const hat = '^';
 const hole = 'O';
@@ -47,9 +48,33 @@ export class Field {
   }
   
   print() {
-    // console.clear();
+    console.clear();
     for (let i=0; i < this.field.length; i++) {
-      console.log(this.field[i].join(""));
+      let rowString: string = "";
+      for (let j=0; j < this.field[i].length; j++) {
+        if (this.position[0] === j && this.position[1] === i) {
+          rowString += chalk.red(pathCharacter);
+        } else {
+          switch(this.field[i][j]) {
+            case fieldCharacter:
+              rowString += chalk.gray(fieldCharacter);
+              break;
+            case hat:
+              rowString += chalk.yellow(hat);
+              break;
+            case hole:
+              rowString += chalk.magenta(hole);
+              break;
+            case pathCharacter:
+              rowString += chalk.white(pathCharacter);
+              break;
+            default:
+              rowString += this.field[i][j];
+              break;
+          }
+        }
+      }
+      console.log(rowString);
     }
   }
 
@@ -103,7 +128,7 @@ export class Field {
   }
 
   testField() {
-    const testFieldArr = [...this.field];
+    const testFieldArr = this.field.map(row => [...row]);
     const backtrackCharacter = 'X';
 
     const moveInputTest = (position:number[], input:string): void => {
@@ -125,12 +150,13 @@ export class Field {
       };
     };
 
-    function moveResult(position: number[], field: string[][]): boolean | number {
+    function moveResult(position: number[], field: string[][], backtracking: boolean): boolean | number {
       const horizontalPosition = position[0];
       const verticalPosition = position[1];
       const currentPosition = field[verticalPosition][horizontalPosition];
       switch (currentPosition) {
         case fieldCharacter:
+          backtracking = false;
           return 2;
         case hat:
           isFound = true;
@@ -138,13 +164,17 @@ export class Field {
         case hole:
           return false;
         case pathCharacter:
-          if (isBacktracking) {
+          if (backtracking) {
             return 3;
           } else {
             return false;
           }
         case backtrackCharacter:
-          return false;
+          if (backtracking) {
+            return 4;
+          } else {
+            return false;
+          }
         default:
           return false;
       };
@@ -170,21 +200,22 @@ export class Field {
     const moveDirectionUp = {forward: 'u', right: 'r', left: 'l', back: 'd'};
 
     let currentMoveDirection = moveDirectionRight;
-    const changeMoveDirection = (direction:string) => {
+    type moveDirectionType = typeof currentMoveDirection;
+    const changeMoveDirection = (currentDirection:moveDirectionType, direction:string) => {
       switch (direction) {
-        case (currentMoveDirection.forward):
+        case (currentDirection.forward):
           break;
         case 'r':
-          currentMoveDirection = moveDirectionRight;
+          currentDirection = moveDirectionRight;
           break;
         case 'd':
-          currentMoveDirection = moveDirectionDown;
+          currentDirection = moveDirectionDown;
           break;
         case 'l':
-          currentMoveDirection = moveDirectionLeft;
+          currentDirection = moveDirectionLeft;
           break;
         case 'u':
-          currentMoveDirection = moveDirectionUp;
+          currentDirection = moveDirectionUp;
           break;
         default:
           break;
@@ -193,8 +224,6 @@ export class Field {
 
     const reverseMoveDirection = (direction:string) => {
       switch (direction) {
-        case (currentMoveDirection.forward):
-          break;
         case 'r':
           currentMoveDirection = moveDirectionLeft;
           break;
@@ -214,7 +243,7 @@ export class Field {
 
     type MoveKey = 'forward' | 'right' | 'left';
     const moveDirectionPriority = ['forward', 'right', 'left'] as const;
-    const backtrackMoveDirectionPriority = ['right', 'left', 'forward'] as const;
+    const backtrackMoveDirectionPriority = ['left', 'right', 'forward'] as const;
     
     let moveDirectionKeys:readonly MoveKey[];
     
@@ -240,14 +269,10 @@ export class Field {
         let testPosition = [...currentPosition];
         moveInputTest(testPosition, moveDirection);
         positionsArray.push(testPosition);
-        moveResultsArray.push(moveResult(testPosition, testFieldArr));
+        moveResultsArray.push(moveResult(testPosition, testFieldArr, isBacktracking));
         moveDirectionsArray.push(moveDirection);
       }
       
-      console.log(positionsArray);
-      console.log(moveResultsArray);
-      console.log(moveDirectionsArray);
-
       if (moveResultsArray.some(Boolean)) {
         let priorityMove: number | null = null;
         for (let i=0; i < moveResultsArray.length; i++) {
@@ -255,33 +280,29 @@ export class Field {
             if (priorityMove === null) {
               priorityMove = i;
             } else if (moveResultsArray[i] as number < (moveResultsArray[priorityMove] as number)) {
-              console.log('comparison 1: ', moveResultsArray[i] as number);
-              console.log('comparison 2: ', moveResultsArray[priorityMove] as number);
-              console.log('result: ', moveResultsArray[i] as number < (moveResultsArray[priorityMove] as number))
               priorityMove = i;
             }
-            console.log(positionsArray[priorityMove as number]);
-            console.log(moveDirectionsArray[priorityMove as number]);
           }
-        }
+        };
+
         const newPosition = positionsArray[priorityMove as number];
         const newDirection = moveDirectionsArray[priorityMove as number];
         moveToTile(newPosition, testFieldArr);
         currentPosition = newPosition;
-        changeMoveDirection(newDirection);
+        changeMoveDirection(currentMoveDirection, newDirection);
       } else {
         moveToTile(currentPosition, testFieldArr) // To make this tile "X"
         reverseMoveDirection(currentMoveDirection.forward);
         isBacktracking = true;
-      }
+      };
 
-      this.print();
+      // this.print();
       
       isStuck++;
       if (isStuck > this.width * this.height * 2) {
         console.log('stuck');
         isFailed = true;
-      }
+      };
 
       if (isFailed) {
         console.log('Failed to reach hat.');
@@ -292,14 +313,14 @@ export class Field {
         console.log('Found hat!');
         break;
       };
-    }
+    };
 
     if (isFailed) {
       return false;
-    }
+    };
     
     if (isFound) {
       return true;
-    }
-  }
+    };
+  };
 };
